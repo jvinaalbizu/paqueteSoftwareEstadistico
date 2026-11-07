@@ -1,0 +1,12 @@
+Package: paqueteSoftwareEstadistico
+Title: Paquete de funciones para Software Matematico y Estadistico
+Version: 1.0.0
+Authors@R: person("Julene", "Viña Albizu", email = "jvina001@ehu.eus", role = c("aut", "cre"))
+Description: Conjunto de herramientas en R para discretización de atributos, cálculo de métricas (varianza, entropía y AUC), normalización y estandarizacion, filtrado de variables y representación gráfica de relaciones pareadas.
+License: GPL-3
+Encoding: UTF-8
+VignetteBuilder: knitr
+Suggests: 
+    knitr,
+    rmarkdown
+Config/roxygen2/version: 8.1.1

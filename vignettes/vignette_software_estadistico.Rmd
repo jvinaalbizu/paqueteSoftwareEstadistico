@@ -1,0 +1,159 @@
+---
+title: "vignette_software_estadistico"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{vignette_software_estadistico}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(paqueteSoftwareEstadistico)
+```
+
+# Introducción
+
+Esta viñeta ilustra el uso de las funciones del paquete `paqueteSoftwareEstadistico` desarrollado desde cero en R.
+
+
+# Creación del Dataset de Prueba
+
+Para demostrar el funcionamiento de todas las funciones implementadas, creamos un dataset denominado `pacientes_salud`.
+
+```{r datos_ejemplo}
+set.seed(123)
+pacientes_salud <- data.frame(
+  Edad = c(22, 25, 47, 52, 46, 56, 23, 61, 35, 50),
+  Colesterol = c(160, 175, 230, 240, 215, 260, 168, 290, 195, 220),
+  Glucosa = c(85, 90, 115, 130, 105, 140, 88, 155, 98, 110),
+  Presion_Arterial = c(115, 120, 135, 140, 138, 150, 118, 145, 125, 130),
+  Frecuencia_Cardiaca = c(68, 71, 72, 80, 76, 85, 82, 88, 86, 70),
+  Constante_Presion = c(120, 120, 120, 120, 120, 120, 120, 120, 120, 120),
+  Nivel_Estudios = c("ESO", "Grado", "Master", "ESO", "Grado", "Master", "ESO", "Master", "Grado", "Grado"),
+  Fumador = c("No", "No", "Sí", "Sí", "No", "Sí", "No", "Sí", "No", "Sí"),
+  Diagnostico = c("Sano", "Sano", "Enfermo", "Enfermo", "Sano", "Enfermo", "Sano", "Enfermo", "Sano", "Enfermo"),
+  stringsAsFactors = FALSE
+)
+
+# Mostramos el dataset original
+knitr::kable(pacientes_salud, caption = "Tabla 1: Dataset Original 'pacientes_salud'")
+```
+
+---
+
+# Casos de Uso y Ejecución Paso a Paso
+
+## Discretización de Atributos y Datasets
+
+### Discretización por Igual Anchura
+
+Calcula el ancho de cada intervalo $\text{ancho} = \frac{\max(x) - \min(x)}{k}$ y asigna cada número al intervalo $[a, b)$ correspondiente.
+
+```{r discretizar_anchura}
+# Aplicar a un solo atributo (Colesterol) en k = 3 intervalos
+res_colesterol <- discretizar_anchura_atributo(pacientes_salud$Colesterol, num_intervalos = 3)
+
+# Mostrar resultado
+res_colesterol$datos_discretizados
+
+# Aplicar al dataset completo
+df_discretizado_anchura <- discretizar_dataset(pacientes_salud, num_intervalos = 3, metodo = "anchura")
+knitr::kable(df_discretizado_anchura, caption = "Tabla 2: Dataset Discretizado por Igual Anchura (k = 3)")
+```
+
+### Discretización por Igual Frecuencia
+
+Distribuye las observaciones en intervalos que contienen aproximadamente el mismo número de observaciones basándose en las posiciones relativas (`order(order(x))`).
+
+```{r discretizar_frecuencia}
+# Aplicar al dataset completo
+df_discretizado_frecuencia <- discretizar_dataset(pacientes_salud, num_intervalos = 3, metodo = "frecuencia")
+knitr::kable(df_discretizado_frecuencia, caption = "Tabla 3: Dataset Discretizado por Igual Frecuencia (k = 3)")
+```
+
+---
+
+## Cálculo de Métricas sobre el Dataset
+
+Llamamos a `calcular_metricas_dataset()` para evaluar la varianza, el AUC y la Entropía de Shannon usando la columna `Diagnostico` como variable clase.
+
+```{r metricas_dataset}
+tabla_metricas <- calcular_metricas_dataset(pacientes_salud, var_clase = "Diagnostico")
+knitr::kable(tabla_metricas, digits = 4, caption = "Tabla 4: Métricas del Dataset 'pacientes_salud'")
+```
+
+---
+
+
+##  Transformación del dataset
+
+Transformamos las columnas numéricas continuas mediante normalizacion y estandarizacion.
+
+```{r transformacion_dataset}
+# Normalización Min-Max [0, 1]
+df_normalizado <- transformar_dataset(pacientes_salud, metodo = "normalizacion")
+knitr::kable(df_normalizado, digits = 4, caption = "Tabla 6: Dataset Normalizado Min-Max")
+
+# Estandarización Z-Score (Media = 0, Desv = 1)
+df_estandarizado <- transformar_dataset(pacientes_salud, metodo = "estandarizacion")
+knitr::kable(df_estandarizado, digits = 4, caption = "Tabla 7: Dataset Estandarizado Z-Score")
+```
+
+---
+
+## Filtrado de Variables
+
+Aplicamos `filtrar_variables()` para descartar atributos que no superen los umbrales establecidos:
+
+* **Variables Continuas:** Varianza normalizada $> 0.05$ y $\text{AUC} > 0.60$.
+* **Variables Discretas:** Entropía de Shannon $> 0.50$ bits.
+
+```{r filtrado_dataset}
+dataset_filtrado <- filtrar_variables(pacientes_salud, nombre_var_clase = "Diagnostico")
+
+#  'Constante_Presion' ha sido eliminada por tener varianza 0
+knitr::kable(dataset_filtrado, caption = "Tabla 5: Dataset Filtrado")
+```
+
+---
+
+## Matriz de Relaciones
+
+Generamos la matriz cuadrada $p \times p$ con la Correlación de Pearson para variables continuas y la Información Mutua para variables categóricas.
+
+```{r matriz_relaciones}
+matriz_rel <- calcular_matriz_relaciones(pacientes_salud)
+knitr::kable(matriz_rel, digits = 4, caption = "Tabla 8: Matriz de Relaciones")
+```
+
+---
+
+# Visualización Gráfica
+
+## Curvas ROC y AUC
+
+Generamos los gráficos ROC individuales para cada variable numérica continua en relación con la variable clase `Diagnostico`.
+
+```{r plot_auc_ejecucion, fig.cap="Figura 1: Curvas ROC y AUC para Atributos Continuos"}
+plot_auc(dataset_filtrado, nombre_var_clase = "Diagnostico")
+```
+
+## Gráficos de Correlación e Información Mutua
+
+Representamos gráficamente los pares de variables:
+
+* **Pares continuos:** Diagramas de Dispersión (*Scatter Plot*) con la recta de ajuste en rojo.
+* **Pares categóricos:** Gráficos de barras con la Información Mutua en bits.devtools::install(build_vignettes = TRUE)
+
+```{r plot_relaciones_ejecucion, fig.cap="Figura 2: Relaciones del Dataset"}
+plot_correlacion_infmutua(dataset_filtrado)
+```
+
+---
